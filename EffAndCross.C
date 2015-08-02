@@ -39,11 +39,11 @@ int EffAndCross()
   std::cout<<"Energy " << "\tefficiency "<< "\tcross1 " << "\tcross2" <<std::endl;
   while (!infile.eof())
   { 
-    double energy, totNo, cut1, cut2, cut3, cut4, cut5, cut6, cut7;
-    double np1, nm1, np2, nm2;
+    double energy, totNo, noISR, cut2trk, cntISR, cutcos1, cutcos2, cutcos, cutep1, cutep2, cuttof, cutp;
+    double np1, npdata, nerr;
     double isrcor, lum;
-    double obs1, obs2;
-    double nm, nmerr;
+    //double obs1, obs2;
+    //double nm, nmerr;
 
     infile.getline(line,1000);
     istringstream iss;
@@ -53,15 +53,15 @@ int EffAndCross()
       continue;  
     }
     else {
-      iss >> energy >> totNo >> cut1 >> cut2 >> cut3 >> cut4 >> cut5 >> cut6 >> cut7;
-      iss >> isrcor; 
-      char a; iss >> a >> a >> a; double err; iss >> err;
-      iss >> obs1 >> nm >> nmerr;
-      iss >> lum;
+      iss >> energy >> totNo >> noISR >> cut2trk >> cntISR >> cutcos1 >> cutcos2 >> cutcos >> cutep1 >> cutep2 >> cuttof >> cutp >> np1 >> npdata >> nerr >> lum;
+      //iss >> isrcor; 
+      //char a; iss >> a >> a >> a; double err; iss >> err;
+      //iss >> obs1 >> nm >> nmerr;
+      //iss >> lum;
     }
-    double eff = cut7/totNo;
-    double cross = nm/(lum*eff);
-    double crosserr = nmerr/(lum*eff);
+    double eff = np1/noISR;
+    double cross = npdata/(lum*eff);
+    double crosserr = nerr/(lum*eff);
     std::cout<<energy<<"\t"<< eff << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff <<std::endl;
 
     x[poNo] = energy;
@@ -69,8 +69,8 @@ int EffAndCross()
     y[poNo] = cross;
     ye[poNo]= crosserr;
     yeff[poNo] = eff;
-    ycor[poNo] = isrcor;
-    yec[poNo]  = isrcor*eff;
+    //ycor[poNo] = isrcor;
+    //yec[poNo]  = isrcor*eff;
     poNo ++;
   }
   TCanvas *c1 = new TCanvas();
@@ -91,22 +91,22 @@ int EffAndCross()
 
   file->WriteTObject(c1);
   
-  graph = new TGraph(poNo,x,ycor);
-  graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
-  graph->GetYaxis()->SetTitle("1+#delta");
-  graph->SetMarkerStyle(5);
-  graph->Draw("AP");
+//graph = new TGraph(poNo,x,ycor);
+//graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+//graph->GetYaxis()->SetTitle("1+#delta");
+//graph->SetMarkerStyle(5);
+//graph->Draw("AP");
 
-  file->WriteTObject(c1);
-  
-  graph = new TGraph(poNo,x,yec);
-  graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
-  graph->GetYaxis()->SetTitle("(1+#delta)*#epsilon");
-  graph->SetTitle("(1+#delta)*#epsilon");
-  graph->SetMarkerStyle(5);
-  graph->Draw("AP");
+//file->WriteTObject(c1);
+//
+//graph = new TGraph(poNo,x,yec);
+//graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+//graph->GetYaxis()->SetTitle("(1+#delta)*#epsilon");
+//graph->SetTitle("(1+#delta)*#epsilon");
+//graph->SetMarkerStyle(5);
+//graph->Draw("AP");
 
-  file->WriteTObject(c1);
+//file->WriteTObject(c1);
 
   double xx[1000];
   double xxe[1000];
