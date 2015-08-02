@@ -1,12 +1,13 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 
 #include "TFile.h"
 #include "TCanvas.h"
 #include "TGraph.h"
 #include "TGraphErrors.h"
-#include "Tlegend.h"
+#include "TLegend.h"
 #include "TAxis.h"
 
 using namespace std;
