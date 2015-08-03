@@ -112,13 +112,15 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   //TFile *fileout = new TFile(name,"recreate");
   const char *pureName = getPureName2(filename);
   std::cout<<"Pure Name: "<< pureName <<std::endl;
-  TFile * tmpfile = new TFile("tmp.root","recreate");
+  char name1[1000];
+  sprintf(name1,"output/%s.root",pureName);
+  TFile * dir = new TFile(name1,"recreate");
   TTree *vars = new TTree("vars","vars");
   
   fileout->cd();
-  TDirectory *dir = fileout->GetDirectory(pureName);
-  if (dir==0) dir = fileout->mkdir(pureName);;
-  dir->cd();
+//TDirectory *dir = fileout->GetDirectory(pureName);
+//if (dir==0) dir = fileout->mkdir(pureName);;
+//dir->cd();
   //TTree *vars = new TTree("vars","vars");
 
   TLorentzVector kap,kam;
@@ -177,7 +179,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
     for (int j=0;j<idxmc;j++){
       if (pdgid[j] == 22 && motheridx[j]==j) { tagmc++; isrtag=1;}
     }
-    if (isrtag==1) continue;
+    //if (isrtag==1) continue;
     //if (run<41122) continue;
     //if (costheta>-0.995) continue;
     //if (nneu>0) continue;
@@ -279,8 +281,8 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   sprintf(name2,"hlcos3");
   dir->WriteTObject(hlcos3,name2);
   //fileout->Close();
-  //dir->WriteTObject(vars);
-  tmpfile->WriteTObject(vars);
+  dir->WriteTObject(vars);
+  //tmpfile->WriteTObject(vars);
 
   
   

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+cd /moose/Bes3User/liud/work/KKCross/KKcross
 echo "#################" >> cutflow
 #energys="20000 20500 21000 21500 21750 \
 #22000 22324 23094 23864 23960 \
@@ -30,7 +31,8 @@ echo "#################" >> cutflow
 #mcdir="/Volumes/data2/ee2KK_mc/ee2KK_mcConExc_665/root"
 
 #mcdir="/Volumes/data2/ee2KK_mcuserxs/root"
-mcdir="/Volumes/data2/ee2KK_mc2_3/root"
+#mcdir="/Volumes/data2/ee2KK_mc2_3/root"
+mcdir="/moose/Bes3User/liud/ee2KK_Phokhara/root"
 
  for file in `ls $mcdir/*.root`;do
    echo "current file is $file"
@@ -38,19 +40,26 @@ mcdir="/Volumes/data2/ee2KK_mc2_3/root"
    ./anaKK $file >> log
  done
 
-mcdir="/Volumes/data2/ee2pipi_mc2/root"
+mcdir="/moose/Bes3User/liud/ee2KK_Phokhara_born/root"
 
-#for file in `ls $mcdir/*.root`;do
-#  echo "current file is $file"
-#  echo "current file is $file" >> log
-#  ./anaKK $file >> log
-#done
+ for file in `ls $mcdir/*.root`;do
+   echo "current file is $file"
+   echo "current file is $file" >> log
+   ./anaKK $file >> log
+ done
 
-mcdir="/Volumes/data2/ee2mumu_mc2/root"
+mcdir="/moose/Bes3User/liud/ee2KK_Phokhara_mumu/root"
 
-#for file in `ls $mcdir/*.root`;do
-#  echo "current file is $file"
-#  echo "current file is $file" >> log
-#  ./anaKK $file >> log
-#done
+ for file in `ls $mcdir/*.root`;do
+   echo "current file is $file"
+   echo "current file is $file" >> log
+   ./anaKK $file >> log
+ done
 
+mcdir="/moose/Bes3User/liud/ee2KK_BABAYAGAee/root"
+
+ for file in `ls $mcdir/*.root`;do
+   echo "current file is $file"
+   echo "current file is $file" >> log
+   ./anaKK $file >> log
+ done
