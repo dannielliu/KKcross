@@ -179,7 +179,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
     for (int j=0;j<idxmc;j++){
       if (pdgid[j] == 22 && motheridx[j]==j) { tagmc++; isrtag=1;}
     }
-    //if (isrtag==1) continue;
+      if (isrtag==1) continue;
     //if (run<41122) continue;
     //if (costheta>-0.995) continue;
     //if (nneu>0) continue;
