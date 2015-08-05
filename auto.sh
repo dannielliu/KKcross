@@ -34,29 +34,37 @@ echo "#################" >> cutflow
 #mcdir="/Volumes/data2/ee2KK_mc2_3/root"
 mcdir="/moose/Bes3User/liud/ee2KK_Phokhara/root"
 
- for file in `ls $mcdir/*.root`;do
-   echo "current file is $file"
-   echo "current file is $file" >> log
-   ./anaKK $file >> log
- done
+#for file in `ls $mcdir/*.root`;do
+#  echo "current file is $file"
+#  echo "current file is $file" >> log
+#  ./anaKK $file >> log
+#done
 
 mcdir="/moose/Bes3User/liud/ee2KK_Phokhara_born/root"
 
- for file in `ls $mcdir/*.root`;do
-   echo "current file is $file"
-   echo "current file is $file" >> log
-   ./anaKK $file >> log
- done
+#for file in `ls $mcdir/*.root`;do
+#  echo "current file is $file"
+#  echo "current file is $file" >> log
+#  ./anaKK $file >> log
+#done
 
 mcdir="/moose/Bes3User/liud/ee2KK_Phokhara_mumu/root"
 
- for file in `ls $mcdir/*.root`;do
-   echo "current file is $file"
-   echo "current file is $file" >> log
-   ./anaKK $file >> log
- done
+#for file in `ls $mcdir/*.root`;do
+#  echo "current file is $file"
+#  echo "current file is $file" >> log
+#  ./anaKK $file >> log
+#done
 
 mcdir="/moose/Bes3User/liud/ee2KK_BABAYAGAee/root"
+
+#for file in `ls $mcdir/*.root`;do
+#  echo "current file is $file"
+#  echo "current file is $file" >> log
+#  ./anaKK $file >> log
+#done
+
+mcdir="/moose/Bes3User/liud/ee2KK_ConExcmyxs/root"
 
  for file in `ls $mcdir/*.root`;do
    echo "current file is $file"
