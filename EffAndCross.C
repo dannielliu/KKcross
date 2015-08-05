@@ -61,13 +61,8 @@ int EffAndCross()
       //iss >> lum;
     }
     double eff = np1/totNo;
-<<<<<<< HEAD
     double cross = npdata/(lum*eff*isrcor);
     double crosserr = nerr/(lum*eff*isrcor);
-=======
-    double cross = npdata/(lum*eff);
-    double crosserr = nerr/(lum*eff);
->>>>>>> aacba437b31620abd8901a9512bfae7113f6f860
     std::cout<<energy<<"\t"<< eff << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff <<std::endl;
 
     x[poNo] = energy;
