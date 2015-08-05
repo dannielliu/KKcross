@@ -60,7 +60,7 @@ int EffAndCross()
       //iss >> obs1 >> nm >> nmerr;
       //iss >> lum;
     }
-    double eff = np1/noISR;
+    double eff = np1/totNo;
     double cross = npdata/(lum*eff);
     double crosserr = nerr/(lum*eff);
     std::cout<<energy<<"\t"<< eff << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff <<std::endl;
