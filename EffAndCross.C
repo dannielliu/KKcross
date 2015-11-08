@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <math.h>
+#include <iomanip>
 
 #include "TFile.h"
 #include "TCanvas.h"
@@ -9,19 +10,27 @@
 #include "TGraphErrors.h"
 #include "TLegend.h"
 #include "TAxis.h"
+#include "TMath.h"
+#include "TF1.h"
 
 using namespace std;
-int EffAndCross();
-
-int main()
+int EffAndCross(char* name=0);
+double BreExp(double *x, double *par)
 {
-  EffAndCross();
+  return par[0]*TMath::BreitWigner(x[0],par[1],par[2])+par[3]/TMath::Power(x[0],6);
+}
+
+int main(int argc, char** argv)
+{
+  if (argc>1) EffAndCross(argv[1]);
+  else EffAndCross();
   return 0;
 }
 
-int EffAndCross()
+int EffAndCross(char* name)
 {
   char filename[1000]={"inicut.txt"};
+  if (name!=0) sprintf(filename,"%s",name);
   ifstream infile(filename);
 
   TGraph *graph;
@@ -37,7 +46,7 @@ int EffAndCross()
   int poNo=0;
 
   char line[1000];
-  std::cout<<"Energy " << "\tefficiency "<< "\tcross1 " << "\tcross2" <<std::endl;
+  std::cout<<"Energy" << "\teff"<< "\tcross" << "\terr\te*(1+δ)\tMCstat\tp_cut \tStat.err" <<std::endl;
   while (!infile.eof())
   { 
     double energy, totNo, noISR, cut2trk, cntISR, cutcos1, cutcos2, cutcos, cutep1, cutep2, cuttof, cutp;
@@ -45,6 +54,7 @@ int EffAndCross()
     double isrcor, lum;
     //double obs1, obs2;
     //double nm, nmerr;
+    double np1_cut2;
 
     infile.getline(line,1000);
     istringstream iss;
@@ -54,8 +64,10 @@ int EffAndCross()
       continue;  
     }
     else {
-      iss >> energy >> totNo >> noISR >> cut2trk >> cntISR >> cutcos1 >> cutcos2 >> cutcos >> cutep1 >> cutep2 >> cuttof >> cutp >> np1 >>isrcor >> npdata >> nerr >> lum;
-      //iss >> isrcor; 
+      iss >> energy >> totNo >>/* noISR >>*/ cut2trk ;
+      iss >>/* cntISR >>*/ cutcos1 >> cutcos2 >> cutcos >> cutep1 >> cutep2 >> cuttof >> cutp ;
+      iss >> np1 >>isrcor >> npdata >> nerr >> lum;
+      iss >> np1_cut2;; 
       //char a; iss >> a >> a >> a; double err; iss >> err;
       //iss >> obs1 >> nm >> nmerr;
       //iss >> lum;
@@ -63,7 +75,11 @@ int EffAndCross()
     double eff = np1/totNo;
     double cross = npdata/(lum*eff*isrcor);
     double crosserr = nerr/(lum*eff*isrcor);
-    std::cout<<energy<<"\t"<< eff << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff <<std::endl;
+    //std::cout<<setiosflags(ios::fixed);
+    std::cout<<setprecision(6);
+    std::cout<<energy<< "\t" <<totNo << "\t" << cutp << "\t" << np1;
+    std::cout<<"\t"<< eff << "\t" << isrcor << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff ;
+    std::cout<<'\t'<< sqrt((1-eff)/(100000*eff))*100<<'\t'<< fabs(np1_cut2-npdata)/npdata*100 <<'\t'<< crosserr/cross*100 <<std::endl;
 
     x[poNo] = energy;
     xe[poNo]=0;
@@ -73,6 +89,7 @@ int EffAndCross()
     ycor[poNo] = isrcor;
     yec[poNo]  = isrcor*eff;
     poNo ++;
+    if (poNo>=21) break;
   }
   TCanvas *c1 = new TCanvas();
   TGraphErrors* graphe = new TGraphErrors(poNo,x,y,xe,ye);
@@ -80,9 +97,18 @@ int EffAndCross()
   graphe->GetYaxis()->SetTitle("Cross section (nb)");
   graphe->SetMarkerStyle(5);
   graphe->Draw("AP");
+  TF1 *fit = new TF1("fit",BreExp,2.0,3.1,4);
+  fit->SetParName(0,"Const1");
+  fit->SetParName(1,"mean");
+  fit->SetParName(2,"sigma");
+  fit->SetParName(3,"Const2");
+  fit->SetParLimits(1,2.2,2.35);
+  fit->SetParLimits(2,0.02,0.1);
+  fit->SetParameters(1,2.25,0.05, 10);
+  graphe->Fit(fit);
 
   TFile *file = new TFile("cross.root","recreate");
-  file->WriteTObject(c1);
+  file->WriteTObject(c1,"CrossSection");
   
   graph = new TGraph(poNo,x,yeff);
   graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
@@ -90,15 +116,15 @@ int EffAndCross()
   graph->SetMarkerStyle(5);
   graph->Draw("AP");
 
-  file->WriteTObject(c1);
+  file->WriteTObject(c1,"Efficiency");
   
-//graph = new TGraph(poNo,x,ycor);
-//graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
-//graph->GetYaxis()->SetTitle("1+#delta");
-//graph->SetMarkerStyle(5);
-//graph->Draw("AP");
+  graph = new TGraph(poNo,x,ycor);
+  graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+  graph->GetYaxis()->SetTitle("1+#delta");
+  graph->SetMarkerStyle(5);
+  graph->Draw("AP");
 
-//file->WriteTObject(c1);
+  file->WriteTObject(c1,"Cor");
 //
   graph = new TGraph(poNo,x,yec);
   graph->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
@@ -107,7 +133,7 @@ int EffAndCross()
   graph->SetMarkerStyle(5);
   graph->Draw("AP");
 
-  file->WriteTObject(c1);
+  file->WriteTObject(c1,"EffCor");
 
   double xx[1000];
   double xxe[1000];
@@ -136,7 +162,7 @@ int EffAndCross()
       iss >> energy1 >> a >> energy2;
       iss >> obs >> obse;
     }
-    std::cout<<"E1: "<< energy1 << "\tE2: "<< energy2 << "\tsigma: "<< obs <<"\terr: "<<obse<<std::endl;
+    //std::cout<<"E1: "<< energy1 << "\tE2: "<< energy2 << "\tsigma: "<< obs <<"\terr: "<<obse<<std::endl;
 
     xx[n2] = (energy2+energy1)/2.;
     xxe[n2] = (energy2-energy1)/2.;
@@ -165,10 +191,15 @@ int EffAndCross()
     }
     if (xid==159) break;
   }
-  std::cout<<"xid: "<<xid<<"\tyid: "<<yid<<std::endl;
+  //std::cout<<"xid: "<<xid<<"\tyid: "<<yid<<std::endl;
   for (int i=0; i<159;i++)
   {
     yye[i] = sqrt(emat[i][i]);
+  }
+
+  for (int i=0; i<159;i++)
+  {
+    cout<<xx[i]<<"\t"<<yy[i]<<"\t"<<yye[i]<<endl;
   }
 
   TCanvas *c2 = new TCanvas();
@@ -197,9 +228,9 @@ int EffAndCross()
   file->WriteTObject(c2);
 
 // output BaBar KK cross section
-  for (int i=0;i<n2;i++){
-    std::cout<<xx[i]<<"   "<<yy[i]<<"   "<<yye[i]<<std::endl;
-  }
+//for (int i=0;i<n2;i++){
+//  std::cout<<xx[i]<<"   "<<yy[i]<<"   "<<yye[i]<<std::endl;
+//}
 
   return 0;
 }

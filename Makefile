@@ -6,7 +6,7 @@ vpath %.o obj
 VPATH = src
 CC = g++ $(ROOTINCLUDE) $(ROOTLIB) #$(INCDIR)
 
-all: anaKK AnaCutflow EffAndCross
+all: anaKK anaKK2 anaKK3 AnaCuts AnaCutflow EffAndCross ShowBABAR
 
 anaKK:Ana.C
 	@echo "compling analysis algorithm, linking objects..."
@@ -22,7 +22,7 @@ obj/%.o: %.C
 
 %: %.C
 	@echo "compiling $@"
-	$(CC) `root-config --cflags --libs` $^ -o $@
+	$(CC) `root-config --cflags --libs` -lRooFitCore -lRooFit -lMathMore $^ -o $@
 
 .PHONY:clean
 clean:

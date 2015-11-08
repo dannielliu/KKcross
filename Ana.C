@@ -1,3 +1,11 @@
+//##############################
+//### this code is modified ####
+//### dliu13@mail.ustc.edu.cn###
+//##############################
+//##############################
+//##############################
+
+
 #include "TFile.h"
 //#include "TFolder.h"
 #include "TTree.h"
@@ -26,7 +34,7 @@ int main(int argc, char** argv)
   //if (argc==1) Ana(argv[1]);
   //if (argc>1)  Ana(argv[1],argv[2]);
   //else Ana();
-  TFile *fileout = new TFile("output/output_mc.root","update");
+  TFile *fileout = new TFile("output/output_noFnoEp.root","update");
   for (int i=1; i<argc; i++){
     Ana(argv[i],0,fileout);
   }
@@ -45,7 +53,32 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   if (file==0) return -1;
   TTree *tree = (TTree*)file->Get("TwoProng");
   if (tree==0) return -2;
+
+  double ene[21];
+  double pcut[21];
+  double epcut[21];
+  double thecut[21];
+  double m_pcut;
+  double m_epcut;
+  double m_thecut;
+  ifstream cutin("cutpar");
+  char line[1000];
+  if (cutin.is_open()) cutin.getline(line,1000);
+  int iene=0;
+  // set E/p and p cut, mark: set cut
+  while (!cutin.eof()){
+    cutin.getline(line,1000);
+    istringstream iss;
+    iss.str(line);
+    iss>>ene[iene]>>pcut[iene]>>epcut[iene];
+    iene++;
+    if (iene==21) break;
+  }
+  for (int i=0;i<21;i++) epcut[i] = 1.64295 - 0.629622*ene[i] + 0.104755 *pow(ene[i],2);
+  //for (int i=0;i<21;i++) thecut[i] = 173.946 + 1.74736*ene[i];
+  for (int i=0;i<21;i++) thecut[i] = 179;
   
+
   double kappx,kappy,kappz,kampx,kampy,kampz;
   int nneu;
   int run;
@@ -90,6 +123,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   tree->SetBranchAddress("ntof2",&ntof2);
   tree->SetBranchAddress("toflayer2",tofl2);
   tree->SetBranchAddress("tof2",tof2);
+  double pi = TMath::Pi();
   double mka = 0.493677;
   //double mka = 0.13957;
   //double mka = 0.1057;
@@ -97,6 +131,20 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   tree->GetEntry(0);
   double Ebeam = GetEnergy(run);
   if (Ebeam<1.0) Ebeam = getEne(filename);
+  //Ebeam = 3.08;
+
+  for (int iene=0;iene<21;iene++){
+    if (Ebeam == ene[iene]) {
+      m_pcut = pcut[iene];
+      m_epcut = epcut[iene];
+      m_thecut = thecut[iene];
+      break;
+    }
+  }
+  //m_epcut = m_epcut -0.05; // change E/p to determine uncertainty from this cut
+  //m_thecut = 178.8; // uncertainty from theta cut
+  double m_tofcut = 3;
+  std::cout<<"pcut "<<m_pcut<<", E/p cut "<<m_epcut<<std::endl;
 
 //char name[100];
 //if (Ebeam>0){
@@ -113,15 +161,16 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   const char *pureName = getPureName2(filename);
   std::cout<<"Pure Name: "<< pureName <<std::endl;
   char name1[1000];
+  //sprintf(name1,"output/%s.root",pureName);
   sprintf(name1,"output/%s.root",pureName);
-  TFile * dir = new TFile(name1,"recreate");
+  TFile *dir = new TFile(name1,"recreate");
   TTree *vars = new TTree("vars","vars");
-  
-  fileout->cd();
+
+//fileout->cd();
 //TDirectory *dir = fileout->GetDirectory(pureName);
 //if (dir==0) dir = fileout->mkdir(pureName);;
 //dir->cd();
-  //TTree *vars = new TTree("vars","vars");
+//TTree *vars = new TTree("vars","vars");
 
   TLorentzVector kap,kam;
   double mass;
@@ -131,10 +180,18 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   double p1,p2;
   double tof11=-1000,tof21=-1000;
   int tofid;
+  int isrtag=0;
+  int tof1tag=0;
+  int tof2tag=0;
+  int emctag=0;
   vars->Branch("run",&run,"run/I");
   vars->Branch("indexmc",&idxmc,"indexmc/I");
   vars->Branch("pdgid",pdgid,"pdgid[100]/I");
   vars->Branch("motheridx",motheridx,"motheridx[100]/I");
+  vars->Branch("isrtag",&isrtag,"isrtag/I");
+  vars->Branch("tof1tag",&tof1tag,"tof1tag/I");
+  vars->Branch("tof2tag",&tof2tag,"tof2tag/I");
+  vars->Branch("emctag",&emctag,"emctag/I");
   vars->Branch("mass",&mass,"mass/D");
   vars->Branch("costheta",&costheta,"costheta/D");
   vars->Branch("costheta1",&costheta1,"costheta1/D");
@@ -152,9 +209,30 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   TTree *datasel1 = new TTree("datasel1","datasel1");
   datasel1->Branch("x1",&p1,"x1/D");
   datasel1->Branch("mass",&mass,"mass/D");
-  TTree *datasel2 = new TTree("datasel2","datasel2");
-  datasel2->Branch("x1",&p2,"x1/D");
-  datasel2->Branch("mass",&mass,"mass/D");
+//TTree *datasel2 = new TTree("datasel2","datasel2");
+//datasel2->Branch("x1",&p2,"x1/D");
+//datasel2->Branch("mass",&mass,"mass/D");
+//const int nangle=0;
+//TTree* datasel[nangle];
+//double thetan[nangle];
+//for (int i=0; i<10;i++){
+//  char tmpname[100];
+//  sprintf(tmpname,"datasel_%02d",i);
+//  datasel[i] = new TTree(tmpname,tmpname);
+//  datasel[i]->Branch("x1",&p1,"x1/D");
+//  datasel[i]->Branch("mass",&mass,"mass/D");
+//  thetan[i] = 170+i;
+//}
+//for (int i=10; i<nangle;i++){
+//  char tmpname[100];
+//  sprintf(tmpname,"datasel_%02d",i);
+//  datasel[i] = new TTree(tmpname,tmpname);
+//  datasel[i]->Branch("x1",&p1,"x1/D");
+//  datasel[i]->Branch("mass",&mass,"mass/D");
+//  thetan[i] = 178.+(180.-178.)/(nangle-10)*(i-10);
+//}
+//
+  fileout->cd();
 
   int nentries = tree->GetEntries();
   double pexp = sqrt(pow(Ebeam/2,2)-pow(mka,2));
@@ -165,24 +243,22 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   int count[10]={0};
   int tagmc=0;
 
-  TH1D *ldis = new TH1D("ldis","ldis",100,-50,50);
-  TH1D *lcos1 = new TH1D("lcos1","lcos1",3,0,3);
-  TH2D *hlcos = new TH2D("hlcos","hlcos",1000,-1,1,3,0,3);
-  TH2D *hlcos1 = new TH2D("hlcos1","hlcos1",1000,-1,1,30,0,30);
-  TH2D *hlcos2 = new TH2D("hlcos2","hlcos2",1000,-1,1,30,0,30);
-  TH2D *hlcos3 = new TH2D("hlcos3","hlcos3",1000,-1,1,300,0,300);
-
   for (int ien=0;ien<nentries;ien++){
     tree->GetEntry(ien);
     
-    int isrtag=0;
+    isrtag = 0;
     for (int j=0;j<idxmc;j++){
       if (pdgid[j] == 22 && motheridx[j]==j) { tagmc++; isrtag=1;}
     }
-      if (isrtag==1) continue;
+    //if (isrtag == 1) cout<< ien<<std::endl;
+    //if (isrtag==0) continue;
     //if (run<41122) continue;
     //if (costheta>-0.995) continue;
     //if (nneu>0) continue;
+  //tof1tag=1, tof2tag=1, emctag=1;
+  //if (emcstatusShort!=0x3 && emcstatusInt!=0x3) emctag=0;
+  //if (ntof1<1) tof1tag=0;
+  //if (ntof2<1) tof2tag=0;
     if (emcstatusShort!=0x3 && emcstatusInt!=0x3) continue;
     if (ntof1<1) continue;
     if (ntof2<1) continue;
@@ -202,18 +278,11 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
     costheta1 = kap.CosTheta();
     costheta2 = kam.CosTheta();
     
-    for (int i=0;i<ntof1;i++){
-      //if (tofl1[i]==1) tof11=tof1[i];
-      hlcos->Fill(costheta1,tofl1[i]);
-    }
-    if (ntof1==1) hlcos1->Fill(costheta1,tofl1[0]);
-    if (ntof1==2) hlcos2->Fill(costheta1,tofl1[0]*10+tofl1[1]);
-    if (ntof1==3) hlcos3->Fill(costheta1,tofl1[0]*100+tofl1[1]*10+tofl1[2]);
-
     // momentum information in cms coordinalte
     kap.Boost(-0.011,0,0);
     kam.Boost(-0.011,0,0);
     costheta = kap.Vect().Dot(kam.Vect())/(kap.Vect().Mag()*kam.Vect().Mag());
+    double theta = kap.Vect().Angle(kam.Vect())/TMath::Pi()*180.;
     mass = (kap+kam).M();
     totp = (kap+kam).Rho();
     p1 = kap.Rho();
@@ -223,148 +292,77 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
 
     // select candidate, p1 dis
     // if (count0%100000==0) std::cout<<"epratio1 is "<< epratio1<<std::endl;
-    if (fabs(costheta1)<0.8){ count[4]++;
-    if (fabs(costheta2)<0.8){ count[5]++;
-    if (costheta<-0.99){ count[2]++;
-    if (epratio1<0.85){ count[0]++;
-    if (epratio2<0.85){ count[1]++;
-    //if (totp<0.05){ count[3]++;
-    if (fabs(tof11-tof21)<0.7){
-       count3++;
-       //if (fabs(p1-pexp)<0.08) {/*datasel1->Fill();*/ count1++; // p1 dis
-       if (fabs(p2-pexp)<0.03) {/*datasel2->Fill();*/ count2++; // p2 dis
-         datasel1->Fill();
-       }
-       //}
+    //if (fabs(costheta1)>0.93) cout<< "ien: "<< ien << "\t cos1: "<< fabs(costheta1)<<endl;
+    if (fabs(costheta1)<0.93 && costheta1 < 0.8) { count[4]++;
+    if (fabs(costheta2)<0.93 && costheta2 > -0.8){ count[5]++;
+    //if (costheta1 > 0.8) continue; // Kp in positive direction
+    //if (costheta2 < -0.8) continue; // Km in negetive direction
+    if (theta>m_thecut){ count[2]++;
+    //if (epratio1<m_epcut)
+    { count[0]++;
+      //if (epratio2<m_epcut)
+      { count[1]++;
+        if (fabs(tof11-tof21)<m_tofcut){
+          count3++;
+          if (p2<m_pcut) {/*datasel2->Fill();*/ count2++; // p2 dis
+            datasel1->Fill();
+          }
+        }
+      }
     }
     }
-   // }
-    }
-    }
+    
+//////////////////////////////
+//  if (fabs(tof11-tof21)<3 && p2<m_pcut && epratio1<m_epcut && epratio2<m_epcut){
+//        for (int anglei=0; anglei<nangle; anglei++) {
+//           if (theta>thetan[anglei]) datasel[anglei]->Fill();
+//        }
+//  }
+//////////////////////////////
+
     }
     }
   }
+  dir->Write();
 
-  ofstream cutflow("cutflow",std::ios::app);
+  ofstream cutflow("cutflow2",std::ios::app);
   cutflow<<filename<<std::endl;
   std::cout<<"data selction 1 size is "<<datasel1->GetEntries()<<std::endl;
   //std::cout<<"data selction 2 size is "<<datasel2->GetEntries()<<" "<<count2<<std::endl;
   cutflow<<"Initial size      :"<<nentries<<std::endl;
   cutflow<<"Tagged ISR evt    :"<< tagmc  <<std::endl;
+  cutflow<<"Tagged no ISR evt :"<< nentries - tagmc  <<std::endl;
+  cutflow<<"Valid tof and emc :"<<count0<<std::endl;
   cutflow<<"After cos1<0.8    :"<<count[4]<<std::endl;
-  cutflow<<"After cos2<0.8    :"<<count[5]<<std::endl;
-  cutflow<<"After cos<-0.99   :"<<count[2]<<std::endl;
-  cutflow<<"After ep1<0.85    :"<<count[0]<<std::endl;
-  cutflow<<"After ep2<0.85    :"<<count[1]<<std::endl;
+  cutflow<<"After cos2>-0.8   :"<<count[5]<<std::endl;
+  cutflow<<"After theta cut   :"<<count[2]<<std::endl;
+  cutflow<<"After ep1         :"<<count[0]<<std::endl;
+  cutflow<<"After ep2         :"<<count[1]<<std::endl;
   //cutflow<<"After totp<0.05   :"<<count[3]<<std::endl;
-  cutflow<<"After dtof<0.7    :"<<count3<<std::endl;
+  cutflow<<"After dtof<3      :"<<count3<<std::endl;
   //cutflow<<"p1-exp<0.08 for p1:"<<count1<<std::endl;
-  cutflow<<"p2-exp<0.03 for p2:"<<count2<<std::endl;
-  if (count2==0) return -3;
+  cutflow<<"p2-exp<3 sigma    :"<<count2<<std::endl;
+  //if (count2==0) return -3;
+
 
   double sigp1=FitSpectrum(datasel1, Ebeam, pureName);
-  //double sigm1=FitSpectrum2(datasel1, Ebeam, pureName);
-//double sigp2=FitSpectrum(datasel2, Ebeam,"p2");
-//double sigm2=FitSpectrum2(datasel2, Ebeam,"p2");
   cutflow<<"p1 fit signal     :"<<sigp1 <<std::endl;
   //cutflow<<"m1 fit signal     :"<<sigm1 <<std::endl;
 //cutflow<<"p2 fit signal     :"<<sigp2 <<std::endl;
 //cutflow<<"m2 fit signal     :"<<sigm2 <<std::endl;
 
-  char name2[100];
-  sprintf(name2,"hlcos");
-  dir->WriteTObject(hlcos,name2);
-  sprintf(name2,"hlcos1");
-  dir->WriteTObject(hlcos1,name2);
-  sprintf(name2,"hlcos2");
-  dir->WriteTObject(hlcos2,name2);
-  sprintf(name2,"hlcos3");
-  dir->WriteTObject(hlcos3,name2);
-  //fileout->Close();
-  dir->WriteTObject(vars);
-  //tmpfile->WriteTObject(vars);
+//char nameangle[100];
+//for (int anglei=0; anglei<nangle; anglei++){
+//  sprintf(nameangle,"%s_%.2f",&pureName[9],thetan[anglei]);
+//  //sprintf(nameangle,"%.2f",epn[epi]);
+//  std::cout<<nameangle<<" entries is " << datasel[anglei]->GetEntries()<<std::endl;
+//  FitSpectrum(datasel[anglei], Ebeam, nameangle);
+//}
 
-  
-  
-  // cut study
-  //sprintf(name2,"%s.root",name);
-  //TFile *file2 = new TFile(name2,"recreate");
-  TH1D* hpdis = new TH1D("hpdis","p distribution",1000,0,2.0);
-  TH2D* h2pdis = new TH2D("h2pdis","p distribution",1000,0,2.0,1000,0,2.0);
-  char cut[1000];
-  
-  sprintf(cut,"");
-  vars->Draw("p1>>hpdis",cut);
-  vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpNocut");
-  dir->WriteTObject(hpdis,name2);
-  sprintf(name2,"h2pNocut");
-  dir->WriteTObject(h2pdis,name2);
-  
-  sprintf(cut,"abs(p2-%f)<0.03",pexp);
-  vars->Draw("p1>>hpdis",cut);
-  //vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpcut1p");
-  dir->WriteTObject(hpdis,name2);
-  //sprintf(name2,"h2pcut1p");
-  //dir->WriteTObject(h2pdis,name2);
-  
-  sprintf(cut,"abs(p2-%f)<0.03 & abs(costheta1)<0.8 & abs(costheta2)<0.8",pexp);
-  vars->Draw("p1>>hpdis",cut);
-  sprintf(cut,"abs(costheta1)<0.8 & abs(costheta2)<0.8");
-  vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpcutcosi");
-  dir->WriteTObject(hpdis,name2);
-  sprintf(name2,"h2pcutcosi");
-  dir->WriteTObject(h2pdis,name2);
-  
-  sprintf(cut,"abs(p2-%f)<0.03 & abs(costheta1)<0.8 & abs(costheta2)<0.8 & costheta<-0.99",pexp);
-  vars->Draw("p1>>hpdis",cut);
-  sprintf(cut,"abs(costheta1)<0.8 & abs(costheta2)<0.8 & costheta<-0.99");
-  vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpcutcos");
-  dir->WriteTObject(hpdis,name2);
-  sprintf(name2,"h2pcutcos");
-  dir->WriteTObject(h2pdis,name2);
-  
-  sprintf(cut,"abs(p2-%f)<0.03 & abs(costheta1)<0.8 & abs(costheta2)<0.8  & costheta<-0.99 & ep1<0.85 & ep2<0.85",pexp);
-  vars->Draw("p1>>hpdis",cut);
-  sprintf(cut,"abs(costheta1)<0.8 & abs(costheta2)<0.8  & costheta<-0.99& ep1<0.85 & ep2<0.85");
-  vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpcutep");
-  dir->WriteTObject(hpdis,name2);
-  sprintf(name2,"h2pcutep");
-  dir->WriteTObject(h2pdis,name2);
-  
-  sprintf(cut,"abs(p2-%f)<0.03 & abs(costheta1)<0.8 & abs(costheta2)<0.8 & costheta<-0.99 & ep1<0.85 & ep2<0.85 & abs(tof1-tof2)<4",pexp);
-  vars->Draw("p1>>hpdis",cut);
-  sprintf(cut,"abs(costheta1)<0.8 & abs(costheta2)<0.8 & costheta<-0.99 & ep1<0.85 & ep2<0.85 & abs(tof1-tof2)<0.7");
-  vars->Draw("p1:p2>>h2pdis",cut);
-  sprintf(name2,"hpcutTOF");
-  dir->WriteTObject(hpdis,name2);
-  sprintf(name2,"h2pcutTOF");
-  dir->WriteTObject(h2pdis,name2);
-  
-  dir->Write();
-  //file2->Delete("vars;*");
-  //fileout->Delete("vars;*");
-  
 
-  delete ldis;
-  delete lcos1;
-  delete hlcos;
-  delete hlcos1;
-  delete hlcos2;
-  delete hlcos3;
-  delete hpdis;
-  delete h2pdis;
-
-  delete datasel1;
-  delete datasel2;
-  delete []pureName;
-  delete vars;
-  //delete tmpfile;
+  // finish program here
   return 0;
+ 
 }
 
 #include <TStyle.h>
@@ -407,8 +405,11 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
    double beamup=peakvalue+0.2;
    // try to use roofit
    RooRealVar x("x1","momentum",peakvalue,beamlow,beamup,"GeV");
+   //RooRealVar x2("x2","momentum",peakvalue,beamlow,beamup,"GeV");
+   //RooRealVar x("x1","momentum",peakvalue-0.1,beame);
+   //RooRealVar x("x1","momentum",peakvalue-0.1,peakvalue+0.05);
    RooRealVar mean("mean","mean of gaussian",peakvalue,peakvalue-0.003,peakvalue+0.003);
-   RooRealVar sigma("sigma","width of gaussian",0.005,0.004,0.010);
+   RooRealVar sigma("sigma","width of gaussian",0.005,0.004,0.013);
    RooGaussian gaus("gaus","gauss(x,m,s)",x,mean,sigma);
    //RooRealVar mean2("mean2","mean of gaussian",beame,peakvalue,beame+0.1);
    RooRealVar mean2("mean2","mean of gaussian",peakvalue+0.2,peakvalue+0.05,3.0);
@@ -419,7 +420,7 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
    //RooRealVar co2("co2","coefficient #1",   0 ,-100.,100.);
  //RooRealVar co3("co3","coefficient #1",0.1,-100.,100.);
    RooChebychev ground("ground","background",x,RooArgList(co1));
-   RooRealVar signal("signal"," ",1000,0,1000000000);//event number
+   RooRealVar signal("signal"," ",1000,0,10000000);//event number
    RooRealVar background("background"," ",20000,0,100000000);
  //RooRealVar a0("a0","coefficient #0",100,-100000,100000);
  //RooRealVar a1("a1","coefficient #1",-10,-100000,100000);
@@ -428,7 +429,7 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
  //RooPolynomial ground("ground","ground",x,RooArgList(a0,a1,a2));
      
    //RooRealVar sigma2("sigma2","width of gaussian",0.01,0.008,0.02);
-   RooRealVar alpha1("alpha1","#alpha",1.7,1,5);
+   RooRealVar alpha1("alpha1","#alpha",1.7,5);
    RooRealVar nnn1("n1","n",100,1,200);
    RooCBShape cbshape("cbshape1","crystal ball",x,mean,sigma,alpha1,nnn1);
  //RooRealVar sigma2("sigma2","width of gaussian",0.01,0.008,0.02);
@@ -440,7 +441,20 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
    RooDataSet *dataset;
    RooPlot *xframe;
    //RooDataHist *data_6pi;
+   
+   // fit bhabha sigma and mean
+   RooRealVar meanb("meanb","mean of gaussian",beame,beame-0.015,beame+0.005);
+   RooRealVar sigmab("sigmab","width of gaussian",0.005,0.004,0.02);
+ //  RooGaussian gausb("gausb","gauss(x,m,s)",x,meanb,sigmab);
+   
+   RooRealVar alphab("alphab","#alpha",1.0,5);
+   RooRealVar nnnb("nnnb","n",100,1,200);
+   RooCBShape cbshapeb("cbshapeb","crystal ball",x,meanb,sigmab,alphab,nnnb);
  
+   RooRealVar meane("meane","mean of gaussian",beame,beame-0.005,beame+0.003);
+   RooRealVar sigmae("sigmae","width of gaussian",0.005,0.004,0.02);
+   RooGaussian gause("gause","gauss(x,m,s)",x,meane,sigmae);
+   
    RooMsgService::instance().setGlobalKillBelow(RooFit::ERROR); // set out put message level of roofit
    TCanvas *c1 = new TCanvas("","",800,600);
 
@@ -449,25 +463,38 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
    xframe = x.frame(Title("fit p"));
    dataset = new RooDataSet(tmpchr,"data",RooArgSet(x),Import(*dataraw));
    //sum = new RooAddPdf("sum","sum",RooArgList(gaus,gaus2),RooArgList(signal,background));
-   sum = new RooAddPdf("sum","sum",RooArgList(cbshape,gaus2),RooArgList(signal,background));
+   //sum = new RooAddPdf("sum","sum",RooArgList(cbshape,gaus2),RooArgList(signal,background));
    //sum = new RooAddPdf("sum","sum",RooArgList(gaus,gaus2,gaus3),RooArgList(signal,background,signal1));
-   //sum = new RooAddPdf("sum","sum",RooArgList(cbshape1,ground),RooArgList(signal,background));
-   Npar = 6;
+   sum = new RooAddPdf("sum","sum",RooArgList(cbshape,cbshapeb),RooArgList(signal,background));
+   Npar = 10;
    //sigma.setVal(0.035);
    //signal.setVal(1200);
    //background.setVal(200);
    //co1.setVal(0);
    //sum->fitTo(*dataset,Range(peakvalue-1.0*(beame-peakvalue),peakvalue+0.8*(beame-peakvalue)));
-   sum->fitTo(*dataset,Range(peakvalue-0.06,peakvalue+0.06));
+   //sum->fitTo(*dataset,Range(peakvalue-0.07,peakvalue+0.07));
+   //x.setRange("sigragi",peakvalue-0.1,peakvalue+0.07);
+   //x.setRange("sigragi",peakvalue-0.1,beame+0.01);
+   x.setRange("sigragi",peakvalue-0.1,beame+0.012);
+   //sum->fitTo(*dataset);
+   sum->fitTo(*dataset,Range("sigragi"));
+   //sum->fitTo(*dataset,Range(peakvalue-0.1,beame+0.01));
+   //sum->fitTo(*dataset,"e",Range(peakvalue-0.1,beame));
+   //gause.fitTo(*dataset,Range(beame-0.02, beame+0.01));
    dataset->plotOn(xframe);
    //sum->plotOn(xframe,Components(cbshape1),LineStyle(2),LineColor(2));
    //sum->plotOn(xframe,Components(ground),LineStyle(2),LineColor(3));
    //sum->plotOn(xframe,Components(gaus),LineStyle(2),LineColor(2));
-   sum->plotOn(xframe,Components(cbshape),LineStyle(2),LineColor(2));
-   sum->plotOn(xframe,Components(gaus2),LineStyle(2),LineColor(3));
-   sum->plotOn(xframe);
+   sum->plotOn(xframe,Components(cbshape),LineStyle(2),LineColor(2)   ,Range(peakvalue-0.1, peakvalue+0.05)  );
+   sum->plotOn(xframe,Components(cbshapeb),LineStyle(2),LineColor(3)  ,Range(peakvalue-0.1, peakvalue+0.05)  );
+   //sum->plotOn(xframe,Components(cbshape),LineStyle(2),LineColor(2) );
+   //sum->plotOn(xframe,Components(cbshapeb),LineStyle(2),LineColor(3));
+   //sum->plotOn(xframe,Components(gaus2),LineStyle(2),LineColor(3));
+   //gause.plotOn(xframe,LineStyle(2),LineColor(3));
+   sum->plotOn(xframe  ,Range(peakvalue-0.1, peakvalue+0.065)  );
+   //sum->plotOn(xframe);
    xframe->Draw();
-   TPaveText *pt = new TPaveText(0.60,0.5,0.90,0.90,"BRNDC");
+   TPaveText *pt = new TPaveText(0.15,0.65,0.45,0.90,"BRNDC");
    pt->SetBorderSize(0);
    pt->SetFillStyle(4000);
    pt->SetTextAlign(12);
@@ -490,7 +517,45 @@ double FitSpectrum(TTree *&dataraw, double beame, const char* namesfx)
 
  //ofstream outf("f6pi",std::ios::app);
  //outf<<beame<<"\t"<<mean.getVal()<<"\t"<<mean.getError()<<std::endl;
+   ofstream fitpar("fitpar",std::ios::app);
+   fitpar<<" ene = "<< beame*2 <<"\t sig mean = "<< mean.getVal() << "\t sig sigma = "<< sigma.getVal();
+   fitpar<<"\t bkg mean = " << meanb.getVal() << "\t bkg sigma = " << sigmab.getVal();
+   fitpar<<"\t sigNo = " << signal.getVal() << "\t sigNoE = " << signal.getError();
+   fitpar<<"\t bckNo = " << background.getVal() << "\t bckNoE = " << background.getError();
+   fitpar<< "\t chi2 = " << xframe->chiSquare(Npar);
+   fitpar<< std::endl;;
+   //fitpar<<"\t e mean = " << meane.getVal() << "\t e sigma = " << sigmae.getVal()<<std::endl;
    
+   double intel3 = mean.getVal()-3*sigma.getVal();
+   double inteu3 = mean.getVal()+3*sigma.getVal();
+   double intel5 = mean.getVal()-5*sigma.getVal();
+   double inteu5 = mean.getVal()+5*sigma.getVal();
+   //RooRealVar xint("xint","xint",peakvalue-0.1,beame);
+   //x.setRange("sigragi",peakvalue-0.1,beame);
+   //x.setRange("sigragi",peakvalue-0.1,beame+0.01);
+   x.setRange("sigrag3",intel3, inteu3);
+   x.setRange("sigrag5",intel5, inteu5);
+   RooAbsReal* intsigi = cbshape.createIntegral( x,  NormSet(x),  Range("sigragi"));
+   RooAbsReal* intbcki = cbshapeb.createIntegral(x,  NormSet(x),  Range("sigragi"));
+   RooAbsReal* intsig3 = cbshape.createIntegral( x,  NormSet(x),  Range("sigrag3"));
+   RooAbsReal* intbck3 = cbshapeb.createIntegral(x,  NormSet(x),  Range("sigrag3"));
+   RooAbsReal* intsig5 = cbshape.createIntegral( x,  NormSet(x),  Range("sigrag5"));
+   RooAbsReal* intbck5 = cbshapeb.createIntegral(x,  NormSet(x),  Range("sigrag5"));
+   double signalN3 =   signal.getVal()*intsig3->getVal();
+   double backN3 = background.getVal()*intbck3->getVal();
+   double signalN5 =   signal.getVal()*intsig5->getVal();
+   double backN5 = background.getVal()*intbck5->getVal();
+ //double signalN3nom =   signal.getVal()*intsig3->getVal()/intsigi->getVal();
+ //double backN3nom = background.getVal()*intbck3->getVal()/intbcki->getVal();
+ //double signalN5nom =   signal.getVal()*intsig5->getVal()/intsigi->getVal();
+ //double backN5nom = background.getVal()*intbck5->getVal()/intbcki->getVal();
+   ofstream angSNR("angSNR.dat",std::ios::app);
+   angSNR << namesfx <<"\t"<<signalN3 << "\t" << backN3 <<"\t"<<signalN5 << "\t" << backN5 << std::endl;
+ //epSNR << "\t"<<signalN3nom << "\t" << backN3nom <<"\t"<<signalN5nom << "\t" << backN5nom<< std::endl;
+   std::cout<< "Total signal int is "<< intsigi->getVal() <<" Total bck int is "<< intbcki->getVal()<<std::endl;
+   std::cout<< "Total signal int is "<< intsig3->getVal() <<" Total bck int is "<< intbck3->getVal()<<std::endl;
+   std::cout<< "Total signal int is "<< intsig5->getVal() <<" Total bck int is "<< intbck5->getVal()<<std::endl;
+
    //c1->Print("fit6pi.eps");
    //delete data_6pi;
    delete xframe;
@@ -531,11 +596,12 @@ double FitSpectrum1(TTree *&dataraw, double beame, const char* namesfx)
  //RooRealVar a2("a2","coefficient #2",0,-100000,100000);
    //RooRealVar a3("a3","coefficient #2",0,-100000,100000);
  //RooPolynomial ground("ground","ground",x,RooArgList(a0,a1,a2));
-     
-   //RooRealVar sigma2("sigma2","width of gaussian",0.01,0.008,0.02);
+   
+   // signal
    RooRealVar alpha1("alpha1","#alpha",1.,-5,5);
    RooRealVar nnn1("n1","n",100,1,200);
    RooCBShape cbshape("cbshape1","crystal ball",x,mean,sigma,alpha1,nnn1);
+
  //RooRealVar sigma2("sigma2","width of gaussian",0.01,0.008,0.02);
  //RooRealVar alpha1("alpha1","#alpha",1.,-5,5);
  //RooRealVar nnn1("n1","n",100,1,200);

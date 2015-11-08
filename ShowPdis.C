@@ -9,12 +9,24 @@ int ShowPdis()
   double pp[22];
   double deltakpi[22];
   double deltakp[22];
+
+  double beta[22];
+  double length[22];
+  double decayratio[22];
+  double mka = 0.493677;
+  double t0 = 1.238e-8;
+  double vc = 3.e8;
+  
   ifstream infile("pdis");
   infile.getline(line,1000);
   for (int i=0;i<21;i++){
     infile >> ene[i] >> pe[i] >> pmu[i] >> ppi[i] >> pk[i] >> pp[i];
     deltakpi[i] = ppi[i]-pk[i];
     deltakp[i] = pk[i]-pp[i];
+
+	length[i] = pk[i]/mka*vc*t0;
+	beta[i]  = pk[i]/(ene[i]/2.0);
+	decayratio[i] = 1-exp(-0.81/length[i]);
   }
   int n=21;
   TGraph *graph1 = new TGraph(n,ene,pe);
@@ -44,14 +56,24 @@ int ShowPdis()
   graph5->SetMarkerColor(6);
   graph5->SetMarkerStyle(5);
 
-  graph1->GetYaxis()->SetRangeUser(0,2);
-  graph1->GetYaxis()->SetTitle("p (GeV/c)");
-  graph1->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
-  graph1->Draw("AP");
-  graph2->Draw("P");
-  graph3->Draw("P");
-  graph4->Draw("P");
-  graph5->Draw("P");
+//graph1->GetYaxis()->SetRangeUser(0,2);
+//graph1->GetYaxis()->SetTitle("p (GeV/c)");
+//graph1->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+//graph1->Draw("AP");
+//graph2->Draw("P");
+//graph3->Draw("P");
+//graph4->Draw("P");
+//graph5->Draw("P");
+  TMultiGraph *mg = new TMultiGraph();
+  mg->SetTitle("compare p of 2 tracks");
+  mg->Add(graph1);
+  mg->Add(graph2);
+  mg->Add(graph3);
+  mg->Add(graph4);
+  mg->Add(graph5);
+  mg->Draw("APL");
+  mg->GetYaxis()->SetTitle("p (GeV/c)");
+  mg->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
   
   TLegend *legend = new TLegend(0.13,0.65,0.23,0.85);
   legend->AddEntry(graph1,"p_{e}");
@@ -86,7 +108,23 @@ int ShowPdis()
   legend2->AddEntry(graph7,"|p_{K} - p_{p}|");
   legend2->Draw();
 
+  new TCanvas();
+  TGraph *graphlen = new TGraph(n,ene,length);
+  graphlen->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+  graphlen->GetYaxis()->SetTitle("#lambda (m)");
+  graphlen->Draw("APL");
 
+  new TCanvas();
+  TGraph *graphbeta = new TGraph(n,ene,beta);
+  graphbeta->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+  graphbeta->GetYaxis()->SetTitle("#beta_{K^{#pm}}");
+  graphbeta->Draw("APL");
+
+  new TCanvas();
+  TGraph *graphdecay = new TGraph(n,ene,decayratio);
+  graphdecay->GetXaxis()->SetTitle("#sqrt{s} (GeV)");
+  graphdecay->GetYaxis()->SetTitle("decay ratio");
+  graphdecay->Draw("APL");
 
 
 }
