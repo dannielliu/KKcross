@@ -298,9 +298,9 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
     //if (costheta1 > 0.8) continue; // Kp in positive direction
     //if (costheta2 < -0.8) continue; // Km in negetive direction
     if (theta>m_thecut){ count[2]++;
-    //if (epratio1<m_epcut)
+    if (epratio1<m_epcut)
     { count[0]++;
-      //if (epratio2<m_epcut)
+      if (epratio2<m_epcut)
       { count[1]++;
         if (fabs(tof11-tof21)<m_tofcut){
           count3++;
@@ -772,6 +772,8 @@ double FitSpectrum2(TTree *&dataraw, double beame, const char* namesfx)
    sprintf(tmpchr,"mass_spectrum_%s",namesfx);
    c1->SetName(tmpchr);
    c1->Write();
+   sprintf(tmpchr,"mass_spectrum_%s.pdf",namesfx);
+   c1->Print(tmpchr);
 
  //ofstream outf("f6pi",std::ios::app);
  //outf<<beame<<"\t"<<mean.getVal()<<"\t"<<mean.getError()<<std::endl;
