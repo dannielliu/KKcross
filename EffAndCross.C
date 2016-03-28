@@ -15,10 +15,20 @@
 
 using namespace std;
 int EffAndCross(char* name=0);
-double BreExp(double *x, double *par)
+double BreE6(double *x, double *par)
 {
   return par[0]*TMath::BreitWigner(x[0],par[1],par[2])+par[3]/TMath::Power(x[0],6);
 }
+double BreExp(double *x, double *par)
+{
+  return par[0]*TMath::BreitWigner(x[0],par[1],par[2])+par[3]*TMath::Exp(-pow(x[0]-par[4],1)/par[5]) + par[6] ;
+}
+double Breinvx(double *x, double *par)
+{
+  return par[0]*TMath::BreitWigner(x[0],par[1],par[2])+par[3]/pow(x[0]-par[4],1.5) + par[5] ;
+}
+
+
 
 int main(int argc, char** argv)
 {
@@ -29,7 +39,7 @@ int main(int argc, char** argv)
 
 int EffAndCross(char* name)
 {
-  char filename[1000]={"inicut.txt"};
+  char filename[1000]={"inicut_new.txt"};
   if (name!=0) sprintf(filename,"%s",name);
   ifstream infile(filename);
 
@@ -46,7 +56,8 @@ int EffAndCross(char* name)
   int poNo=0;
 
   char line[1000];
-  std::cout<<"Energy" << "\teff"<< "\tcross" << "\terr\te*(1+δ)\tMCstat\tp_cut \tStat.err" <<std::endl;
+  ofstream ofbes("cross.txt_665p01");
+  ofbes<<"Energy \t TotNo \t fitp \t eff \t isr \t e*(1+δ) \t cross \t err \t MCstat \t p_cut \t Stat.err" <<std::endl;
   while (!infile.eof())
   { 
     double energy, totNo, noISR, cut2trk, cntISR, cutcos1, cutcos2, cutcos, cutep1, cutep2, cuttof, cutp;
@@ -64,22 +75,25 @@ int EffAndCross(char* name)
       continue;  
     }
     else {
-      iss >> energy >> totNo >>/* noISR >>*/ cut2trk ;
-      iss >>/* cntISR >>*/ cutcos1 >> cutcos2 >> cutcos >> cutep1 >> cutep2 >> cuttof >> cutp ;
+      iss >> energy >> totNo ;
+      //iss >>/* cntISR >>*/ cutcos1 >> cutcos2 >> cutcos >> cutep1 >> cutep2 >> cuttof >> cutp ;
       iss >> np1 >>isrcor >> npdata >> nerr >> lum;
-      iss >> np1_cut2;; 
+      //iss >> np1_cut2;; 
       //char a; iss >> a >> a >> a; double err; iss >> err;
       //iss >> obs1 >> nm >> nmerr;
       //iss >> lum;
     }
     double eff = np1/totNo;
-    double cross = npdata/(lum*eff*isrcor);
-    double crosserr = nerr/(lum*eff*isrcor);
+    double cross = npdata/(lum*eff*isrcor)/1000;
+    double crosserr = nerr/(lum*eff*isrcor)/1000;
     //std::cout<<setiosflags(ios::fixed);
-    std::cout<<setprecision(6);
-    std::cout<<energy<< "\t" <<totNo << "\t" << cutp << "\t" << np1;
-    std::cout<<"\t"<< eff << "\t" << isrcor << "\t"<< cross <<"\t"<< crosserr << "\t" << isrcor*eff ;
-    std::cout<<'\t'<< sqrt((1-eff)/(100000*eff))*100<<'\t'<< fabs(np1_cut2-npdata)/npdata*100 <<'\t'<< crosserr/cross*100 <<std::endl;
+    ofbes<<setprecision(6);
+    ofbes<<energy<< "\t" <<totNo  << "\t" << np1;
+    ofbes<<fixed;
+    ofbes<<setprecision(4);
+    ofbes<<"\t"<< eff << "\t" << isrcor << "\t" << isrcor*eff  << "\t"<< cross<<"\t"<< crosserr ;
+    ofbes<<'\t'<< sqrt((1-eff)/(totNo*eff))*100<<'\t'<< fabs(np1_cut2-npdata)/npdata*100 <<'\t'<< crosserr/cross*100 <<std::endl;
+    ofbes<<defaultfloat;
 
     x[poNo] = energy;
     xe[poNo]=0;
@@ -89,7 +103,7 @@ int EffAndCross(char* name)
     ycor[poNo] = isrcor;
     yec[poNo]  = isrcor*eff;
     poNo ++;
-    if (poNo>=21) break;
+    if (poNo>=22) break;
   }
   TCanvas *c1 = new TCanvas();
   TGraphErrors* graphe = new TGraphErrors(poNo,x,y,xe,ye);
@@ -97,15 +111,24 @@ int EffAndCross(char* name)
   graphe->GetYaxis()->SetTitle("Cross section (nb)");
   graphe->SetMarkerStyle(5);
   graphe->Draw("AP");
-  TF1 *fit = new TF1("fit",BreExp,2.0,3.1,4);
+  
+  TF1 *fit = new TF1("fit",Breinvx,2.0,3.1,6);
   fit->SetParName(0,"Const1");
   fit->SetParName(1,"mean");
   fit->SetParName(2,"sigma");
   fit->SetParName(3,"Const2");
-  fit->SetParLimits(1,2.2,2.35);
-  fit->SetParLimits(2,0.02,0.1);
-  fit->SetParameters(1,2.25,0.05, 10);
-  graphe->Fit(fit);
+  fit->SetParName(4,"shiftx");
+  fit->SetParName(5,"shifty");
+  fit->SetParLimits(0,0.01,0.05);
+  fit->SetParLimits(1,2.2,2.3);
+  fit->SetParLimits(2,0.08,0.15);
+  fit->SetParLimits(3,0.01,3);
+  fit->SetParLimits(4,1.85,2.1);
+  fit->SetParLimits(5,-0.05,0.05);
+  fit->SetParameters(0.02, 2.25, 0.085, 0.05, 1.95, 0.0);
+  graphe->Fit(fit,"","",2.02,3.1);
+  c1->Print("cross2.pdf");
+  return 0;
 
   TFile *file = new TFile("cross.root","recreate");
   file->WriteTObject(c1,"CrossSection");

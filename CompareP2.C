@@ -34,7 +34,7 @@ int CompareP2()
   double pka[21],pkae[21],pka3e[21],pka5e[21];
   double pmu[21],pmue[21],pmu3e[21],pmu5e[21];
 
-  ifstream infile("fitpar");
+  ifstream infile("fitpar_muK");
   gStyle->SetOptStat(0);
   for (int enei=0; enei<21; enei++){
     char filename[100];
