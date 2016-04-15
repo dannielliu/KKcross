@@ -6,8 +6,8 @@ vpath %.o obj
 VPATH = src
 CC = g++ $(ROOTINCLUDE) $(ROOTLIB) #$(INCDIR)
 
-all: anaKK anaTrack AnaCuts AnaCutflow EffAndCross CrossWithTMinuit CrossWithTMinuit3 BackgroundAna anadimubck ShowBABAR\
-     Ana_epadd Ana_epmin Ana_thetaadd Ana_thetamin Ana_tofadd Ana_tofmin Ana_2D Ana_truthang Ana_OptEp EPoptimize2
+all: anaKK anaTrack AnaCuts AnaCutflow EffAndCross BackgroundAna anadimubck ShowBABAR\
+     Ana_2D Ana_truthang Ana_OptEp EPoptimize2 MCshapeFit Ana_openAng
 
 anaKK:Ana.C
 	@echo "compling analysis algorithm, linking objects..."

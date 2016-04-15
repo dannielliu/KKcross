@@ -201,9 +201,9 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
 //vars->Branch("tof2tag",&tof2tag,"tof2tag/I");
 //vars->Branch("emctag",&emctag,"emctag/I");
 //vars->Branch("mass",&mass,"mass/D");
-//vars->Branch("costheta",&costheta,"costheta/D");
-//vars->Branch("costheta1",&costheta1,"costheta1/D");
-//vars->Branch("costheta2",&costheta2,"costheta2/D");
+  vars->Branch("costheta",&costheta,"costheta/D");
+  vars->Branch("costheta1",&costheta1,"costheta1/D");
+  vars->Branch("costheta2",&costheta2,"costheta2/D");
 //vars->Branch("totp",&totp,"totp/D");
   vars->Branch("p1",&p1,"p1/D");
   vars->Branch("p2",&p2,"p2/D");
@@ -216,6 +216,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
 
   TTree *datasel1 = new TTree("datasel1","datasel1");
   datasel1->Branch("x1",&p1,"x1/D");
+//datasel1->Branch("x1",&p2,"x1/D");
   datasel1->Branch("mass",&mass,"mass/D");
 //TTree *datasel2 = new TTree("datasel2","datasel2");
 //datasel2->Branch("x1",&p2,"x1/D");
@@ -298,7 +299,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
     p1 = kap.Rho();
     p2 = kam.Rho();
  
-    //vars->Fill();
+    vars->Fill();
 
     // select candidate, p1 dis
     // if (count0%100000==0) std::cout<<"epratio1 is "<< epratio1<<std::endl;
@@ -318,7 +319,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
           count3++;
           if (p2<m_pcut) {/*datasel2->Fill();*/ count2++; // p2 dis
             datasel1->Fill();
-	vars->Fill();
+	//vars->Fill();
           }
         }
       }
@@ -355,14 +356,14 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   //cutflow<<"After totp<0.05   :"<<count[3]<<std::endl;
   cutflow<<"After dtof<3      :"<<count3<<std::endl;
   //cutflow<<"p1-exp<0.08 for p1:"<<count1<<std::endl;
-  cutflow<<"p2-exp<3 sigma    :"<<count2<<std::endl;
+  cutflow<<"p1-exp<3 sigma    :"<<count2<<std::endl;
   //if (count2==0) return -3;
 
   //return 0;
 
   //double sigp1=FitSpectrum5(datasel1, Ebeam, pureName);
-  //double sigp1=FitSpectrum4(datasel1, Ebeam, pureName, fileout);
-  double sigp1=FitSpectrum3(datasel1, Ebeam, pureName);
+  double sigp1=FitSpectrum4(datasel1, Ebeam, pureName, fileout);
+  //double sigp1=FitSpectrum3(datasel1, Ebeam, pureName);
   cutflow<<"p1 fit signal     :"<<sigp1 <<std::endl;
   //cutflow<<"m1 fit signal     :"<<sigm1 <<std::endl;
 //cutflow<<"p2 fit signal     :"<<sigp2 <<std::endl;
@@ -1603,27 +1604,44 @@ double FitSpectrum4(TTree *&dataraw, double beame, const char* namesfx, TFile* f
    int Npar;
    double mka = 0.493677;
    double mmu = 0.1057;
+   double Ecm = beame;
    beame = beame/2;
    double peakvalue = sqrt(pow(beame,2)-pow(mka,2));
    double pmu = sqrt(pow(beame,2)-pow(mmu,2));
-   std::cout<<"Fitspectrum "<< peakvalue <<"GeV/c" <<std::endl;
-   double beamlow=peakvalue-0.2;
-   double beamup=peakvalue+0.2;
+   std::cout<<"Ecm is "<<Ecm<<", Fitspectrum "<< peakvalue <<"GeV/c" <<std::endl;
+   //double beamlow=peakvalue-0.2;
+   //double beamup=peakvalue+0.2;
    //double beamlow=peakvalue-0.10;
    //double beamup=peakvalue+0.10;
+   double beamlow=peakvalue-0.1;
+   double beamup=peakvalue+0.2;
+   if (Ecm<2.6) {
+     beamlow=peakvalue-0.05;
+     beamup=peakvalue+0.15;
+   }
    
    char hname[1000];
-   TFile file("output/output_noF.root");
-   sprintf(hname,"hp_mcKK_%.4f",beame*2);
-   TH1D hk = *(TH1D*)(((TH1D*)file.Get(hname))->Clone());
-   sprintf(hname,"hp_mumu_%.4f",beame*2);
-   TH1D hmu = *(TH1D*)(((TH1D*)file.Get(hname))->Clone());
-   file.Close();
-   //if (hk==0 || hmu==0) {cout<<"Error : spare pointer!!!!"<< endl; exit(-1);}
-   hk.Draw();
-   c1->Print("hktmp.pdf");
-   hmu.Draw();
-   c1->Print("hmutmp.pdf");
+   TFile *file=new TFile("output/output_bck.root");
+   sprintf(hname,"hp_mcKK2_%.4f",Ecm);
+   TH1D *hk = (TH1D*)file->Get(hname);
+   sprintf(hname,"hp_mcmumu_%.4f",Ecm);
+   TH1D *hmu = (TH1D*)file->Get(hname);
+   cout<<"aaaaaaaaa"<<endl;
+   cout<<hk<<"\t"<<hmu<<endl;
+   sprintf(hname,"hkrebin_%.4f",Ecm);
+   TH1D *hkrebin = (TH1D*)hk->Rebin(2,hname);
+   sprintf(hname,"hmurebin_%.4f",Ecm);
+   TH1D *hmurebin = (TH1D*)hmu->Rebin(2,hname);
+   cout<<"hist dim "<< hkrebin->GetDimension()<<endl;
+   cout<<"aaaaaaaaa hkrebin pointer "<<hkrebin<<", hmurebin "<<hmurebin<<endl;
+   //return 0;
+     if (hk==0 || hmu==0) {cout<<"Error : spare pointer!!!!"<< endl; exit(-1);}
+     hkrebin->Draw();
+   sprintf(hname,"hktmp_%.4f.pdf",Ecm);
+     c1->Print(hname);
+     hmurebin->Draw();
+   sprintf(hname,"hmutmp_%.4f.pdf",Ecm);
+     c1->Print(hname);
    //
    fileout->cd();
    //
@@ -1631,36 +1649,39 @@ double FitSpectrum4(TTree *&dataraw, double beame, const char* namesfx, TFile* f
    //
    RooRealVar x("x1","momentum",peakvalue,beamlow,beamup,"GeV");
     // signal
-   RooRealVar mean("mean","mean of gaussian",peakvalue,peakvalue-0.003,peakvalue+0.003);
-   RooRealVar sigma("sigma","width of gaussian",0.005,0.004,0.014);
-   RooRealVar alpha1("alpha1","#alpha",1.5,1.0,5.0);
-   RooRealVar nnn1("n1","n",2,1,10);
-   RooCBShape cbshape("cbshape1","crystal ball",x,mean,sigma,alpha1,nnn1);
-   RooRealVar sigma2("sigma2","width of gaussian",0.007,0.005,0.02);
-   RooGaussian gaus("gaus","gauss(x,m,s)",x,mean,sigma2);
-   RooRealVar frac1("frac1","frac1",0.9,0.8,1.0);
+ //RooRealVar mean("mean","mean of gaussian",peakvalue,peakvalue-0.003,peakvalue+0.003);
+ //RooRealVar sigma("sigma","width of gaussian",0.005,0.004,0.014);
+ //RooRealVar alpha1("alpha1","#alpha",1.5,1.0,5.0);
+ //RooRealVar nnn1("n1","n",2,1,10);
+ //RooCBShape cbshape("cbshape1","crystal ball",x,mean,sigma,alpha1,nnn1);
+ //RooRealVar sigma2("sigma2","width of gaussian",0.007,0.005,0.02);
+ //RooGaussian gaus("gaus","gauss(x,m,s)",x,mean,sigma2);
+ //RooRealVar frac1("frac1","frac1",0.9,0.8,1.0);
 
-   RooAddPdf sig("sig","signal",RooArgList(cbshape,gaus),RooArgList(frac1));
+ //RooAddPdf sig("sig","signal",RooArgList(cbshape,gaus),RooArgList(frac1));
  
  
  
- //RooDataHist mckhist("mcKhist","mc K spec",x,&hk);
-   RooDataHist mcmuhist("mcmuhist","mc mu spec",x,&hmu);
- //RooHistPdf kpdf("kpdf","signal",x,mckhist,2); 
-   RooHistPdf mupdf("mupdf","background",x,mcmuhist,2);
+   cout<<"aaaaaaaaa"<<endl;
+   RooDataHist mckhist("mcKhist","mc K spec",x,hkrebin);
+   RooDataHist mcmuhist("mcmuhist","mc mu spec",x,hmurebin);
+   cout<<"aaaaaaaaa"<<endl;
+   RooHistPdf kpdf("kpdf","signal",x,mckhist,4); 
+   RooHistPdf mupdf("mupdf","background",x,mcmuhist,4);
+   cout<<"aaaaaaaaa"<<endl;
 
- //RooRealVar mean("mean","mean of gaussian",0.0007,-0.001, 0.001);
- //RooRealVar sigma("sigma","width of gaussian",0.0024,0.002,0.003);
- //RooGaussian gaus("gaus","gauss(x,m,s)",x,mean,sigma);
+   RooRealVar mean("mean","mean of gaussian",0.0007,-0.005, 0.005);
+   RooRealVar sigma("sigma","width of gaussian",0.0024,0.0005,0.003);
+   RooGaussian gaus("gaus","gauss(x,m,s)",x,mean,sigma);
 
    // signal
- //RooFFTConvPdf sig("sig","signal",x,kpdf,gaus); 
+   RooFFTConvPdf sig("sig","signal",x,kpdf,gaus); 
    //RooHistPdf sig("sig","signal",x,mckhist,2); 
    // background, mainly di-mu
-   //RooFFTConvPdf bck("bck","background",x,mupdf,gaus); 
-   RooHistPdf bck("bck","background",x,mcmuhist,2);
+   RooFFTConvPdf bck("bck","background",x,mupdf,gaus); 
+   //RooHistPdf bck("bck","background",x,mcmuhist,2);
    
-   RooRealVar signal("signal"," ",2000,0,100000);//event number
+   RooRealVar signal("signal"," ",1000,0,10000);//event number
    RooRealVar background("background"," ",200,0,100000);
  
    RooAddPdf *sum;
@@ -1681,7 +1702,8 @@ double FitSpectrum4(TTree *&dataraw, double beame, const char* namesfx, TFile* f
    //sum->fitTo(*dataset,Minimizer("Minuit","simplex"),Hesse(false));
    //sum->fitTo(*dataset,Minimizer("GSLSimAn"));
    //sum->fitTo(*dataset,Minimizer("GSLMultiMin"),Hesse(false) );
-   sum->chi2FitTo(*dataset);
+   //sum->chi2FitTo(*dataset);
+   sum->fitTo(*dataset);
    dataset->plotOn(xframe,Binning(nBins));
    //sum->fitTo(mckhist);
    //mckhist.plotOn(xframe);
@@ -1696,10 +1718,10 @@ double FitSpectrum4(TTree *&dataraw, double beame, const char* namesfx, TFile* f
    pt->SetTextAlign(12);
    pt->SetTextFont(42);
    pt->SetTextSize(0.035);
-// sprintf(tmpchr,"#mu = %1.6f #pm %1.6f",mean.getVal(),mean.getError());
-// pt->AddText(tmpchr);
-// sprintf(tmpchr,"#sigma = %1.6f #pm %1.6f",sigma.getVal(),sigma.getError());
-// pt->AddText(tmpchr);
+   sprintf(tmpchr,"#mu = %1.6f #pm %1.6f",mean.getVal(),mean.getError());
+   pt->AddText(tmpchr);
+   sprintf(tmpchr,"#sigma = %1.6f #pm %1.6f",sigma.getVal(),sigma.getError());
+   pt->AddText(tmpchr);
    sprintf(tmpchr,"N_{sig} = %.2f #pm %.2f",signal.getVal(),signal.getError());
    pt->AddText(tmpchr);
    sprintf(tmpchr,"N_{bck} = %.2f #pm %.2f",background.getVal(),background.getError());
@@ -1714,6 +1736,7 @@ double FitSpectrum4(TTree *&dataraw, double beame, const char* namesfx, TFile* f
    c1->Print(tmpchr);
    
    
+   file->Close();
    delete xframe;
    delete dataset;
    delete sum;
