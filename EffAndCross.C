@@ -92,7 +92,7 @@ int EffAndCross(char* name)
     ofbes<<fixed;
     ofbes<<setprecision(4);
     ofbes<<"\t"<< eff << "\t" << isrcor << "\t" << isrcor*eff  << "\t"<< cross<<"\t"<< crosserr ;
-    ofbes<<'\t'<< sqrt((1-eff)/(totNo*eff))*100<<'\t'<< fabs(np1_cut2-npdata)/npdata*100 <<'\t'<< crosserr/cross*100 <<std::endl;
+    ofbes<<'\t'<< sqrt((1-eff)/(totNo*eff))*100<<'\t'<< fabs(np1_cut2-npdata)/npdata*100 <<'\t'<< crosserr/cross*100;// <<std::endl;
     ofbes<<defaultfloat;
 
     x[poNo] = energy;
@@ -102,6 +102,18 @@ int EffAndCross(char* name)
     yeff[poNo] = eff;
     ycor[poNo] = isrcor;
     yec[poNo]  = isrcor*eff;
+
+    // form factor
+    double mk = 0.493677;
+    double beta = sqrt(1-4*pow(mk/energy,2));
+    double alpha = 1./137;
+    double fsq = 3*pow(energy,2)/(TMath::Pi()*pow(alpha,2)*pow(beta,3))*cross; // unit: GeV^2 * nb
+    double fsqerr = 3*pow(energy,2)/(TMath::Pi()*pow(alpha,2)*pow(beta,3))*crosserr; // unit: GeV^2 * nb
+    // convert GeV^2 * nb to natural unit, (hc)^2 = 0.389 379 338 GeV^2*mbar = 389 379.338 GeV^2*nb
+    fsq = fsq/389379.338;
+    fsqerr = fsqerr/389379.338;
+    ofbes<< "\t"<< energy<<"\t"<< fsq << "\t"<< fsqerr<<endl;
+
     poNo ++;
     if (poNo>=22) break;
   }

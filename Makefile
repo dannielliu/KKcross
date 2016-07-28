@@ -7,7 +7,8 @@ VPATH = src
 CC = g++ $(ROOTINCLUDE) $(ROOTLIB) #$(INCDIR)
 
 all: anaKK anaTrack AnaCuts AnaCutflow EffAndCross BackgroundAna anadimubck ShowBABAR\
-     Ana_2D Ana_truthang Ana_OptEp EPoptimize2 MCshapeFit Ana_openAng
+     Ana_2D Ana_truthang Ana_OptEp EPoptimize2 MCshapeFit Ana_openAng ComparePolarAng2 Ana_simdata Ana_simdata_roAxis\
+     CompareOpenAng_smear
 
 anaKK:Ana.C
 	@echo "compling analysis algorithm, linking objects..."

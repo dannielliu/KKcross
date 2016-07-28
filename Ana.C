@@ -80,7 +80,10 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   }
   for (int i=0;i<22;i++) epcut[i] = 1.64295 - 0.629622*ene[i] + 0.104755 *pow(ene[i],2);
   //for (int i=0;i<21;i++) thecut[i] = 173.946 + 1.74736*ene[i];
-  for (int i=0;i<22;i++) thecut[i] = 179;
+    for (int i=0;i<22;i++) thecut[i] = 179;
+  
+  // label: changle theta cut to 179.5
+  //for (int i=0;i<22;i++) thecut[i] = 179.5;
 
   double kappx,kappy,kappz,kampx,kampy,kampz;
   int nneu;
@@ -148,7 +151,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   //m_epcut = m_epcut +0.05; // change E/p to determine uncertainty from this cut
   //m_thecut = 179+0.2; // uncertainty from theta cut
   //m_pcut = 0.956409;
-  m_thecut = 179;
+  //m_thecut = 179.5;
   m_epcut = 1.64295 - 0.629622*Ebeam + 0.104755 *pow(Ebeam,2);
   double m_tofcut = 3;
   //m_tofcut = 3-1;
@@ -252,9 +255,10 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   int count[10]={0};
   int tagmc=0;
 
+  int nremain=0;
   for (int ien=0;ien<nentries;ien++){
     tree->GetEntry(ien);
-    
+   
      //if ( run == 39582||run == 39671||run == 39723||run == 39783||run == 40208||run == 40300||run == 40308||run == 40462||run == 40526||run == 40946||run == 41099||run == 41200||run == 41283||run == 41408||run == 41416||run == 41436||run == 41445||run == 41471||run == 41728||run == 41818||run == 41902) continue;
      
     isrtag = 0;
@@ -319,6 +323,7 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
           count3++;
           if (p2<m_pcut) {/*datasel2->Fill();*/ count2++; // p2 dis
             datasel1->Fill();
+	if (p1<m_pcut && p1>4*pexp-3*m_pcut) nremain++;
 	//vars->Fill();
           }
         }
@@ -356,14 +361,14 @@ int Ana(const char *filename, const char* outdir, TFile *fileout)
   //cutflow<<"After totp<0.05   :"<<count[3]<<std::endl;
   cutflow<<"After dtof<3      :"<<count3<<std::endl;
   //cutflow<<"p1-exp<0.08 for p1:"<<count1<<std::endl;
-  cutflow<<"p1-exp<3 sigma    :"<<count2<<std::endl;
+  cutflow<<"p1-exp<3 sigma    :"<<count2<<" "<<nremain <<std::endl;
   //if (count2==0) return -3;
 
   //return 0;
 
   //double sigp1=FitSpectrum5(datasel1, Ebeam, pureName);
-  double sigp1=FitSpectrum4(datasel1, Ebeam, pureName, fileout);
-  //double sigp1=FitSpectrum3(datasel1, Ebeam, pureName);
+  //double sigp1=FitSpectrum4(datasel1, Ebeam, pureName, fileout);
+  double sigp1=FitSpectrum3(datasel1, Ebeam, pureName);
   cutflow<<"p1 fit signal     :"<<sigp1 <<std::endl;
   //cutflow<<"m1 fit signal     :"<<sigm1 <<std::endl;
 //cutflow<<"p2 fit signal     :"<<sigp2 <<std::endl;
@@ -1001,7 +1006,7 @@ double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
    return signal.getVal();
 }
 */
-/*
+
 double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
 {
    TF1 fsigma("fsigma","-0.00705519+0.00600716*x",2.0,3.1);
@@ -1196,8 +1201,9 @@ double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
    delete sum;
    return signal.getVal();
 }
-*/
 
+
+/*
 double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
 {
    TF1 fsigma("fsigma","-0.00705519+0.00600716*x",2.0,3.1);
@@ -1317,6 +1323,8 @@ double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
    pt->AddText(tmpchr);
    sprintf(tmpchr,"signal = %.1f #pm %.1f",signal.getVal(),signal.getError());
    pt->AddText(tmpchr);
+   sprintf(tmpchr,"bckgrd = %.1f #pm %.1f",background.getVal(),background.getError());
+   pt->AddText(tmpchr);
    //sprintf(tmpchr,"#chi^{2}/(%d-%d) = %5.3f",nBins,Npar,xframe->chiSquare(Npar));
    sprintf(tmpchr,"#chi^{2} = %5.3f",xframe->chiSquare(Npar));
    pt->AddText(tmpchr);
@@ -1378,8 +1386,8 @@ double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
  //double backN3nom = background.getVal()*intbck3->getVal()/intbcki->getVal();
  //double signalN5nom =   signal.getVal()*intsig5->getVal()/intsigi->getVal();
  //double backN5nom = background.getVal()*intbck5->getVal()/intbcki->getVal();
-   ofstream angSNR("angSNR.dat",std::ios::app);
-   angSNR << namesfx <<"\t"<<signalN3 << "\t" << backN3 <<"\t"<<signalN5 << "\t" << backN5 << std::endl;
+   ofstream angSNR("SNR.dat",std::ios::app);
+   angSNR << namesfx <<"\t"<<signalN3 << "\t" << backN3 <<"\t"<<signalN5 << "\t" << backN5 << "\t"<<mean.getVal() << "\t"<<sigma.getVal()<< std::endl;
  //epSNR << "\t"<<signalN3nom << "\t" << backN3nom <<"\t"<<signalN5nom << "\t" << backN5nom<< std::endl;
    std::cout<< "Total signal int is "<< intsigi->getVal() <<" Total bck int is "<< intbcki->getVal()<<std::endl;
    std::cout<< "Total signal int is "<< intsig3->getVal() <<" Total bck int is "<< intbck3->getVal()<<std::endl;
@@ -1392,7 +1400,7 @@ double FitSpectrum3(TTree *&dataraw, double beame, const char* namesfx)
    delete sum;
    return signal.getVal();
 }
-
+*/
 
 /*
 // prove dimu back can discribe with the function 
@@ -2021,6 +2029,8 @@ double GetEnergy(int run)
   if (run>=42004) return 2.125;
   if (run>=27147 && run<=27288) return 3.08;
   if (run>=28241 && run<=28266) return 3.08;
+  if (run>=28624 && run<=28648) return 2.2324;
+  if (run>=28553 && run<=28575) return 2.8;
   return -1;
 }
 
